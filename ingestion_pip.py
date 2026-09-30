@@ -1,6 +1,8 @@
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_community.document_loaders import PyPDFLoader,DirectoryLoader
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from pathlib import Path
 import os
 
 
@@ -17,7 +19,7 @@ def load_document(docs_path ="Companies_10k_filing"):
     #Loading all .txt files from the directory
     Loader = DirectoryLoader(
         path=docs_path,
-        glob="*.pdf",
+        glob="**/*.pdf",
         loader_cls=PyPDFLoader,
     )
     
@@ -29,4 +31,40 @@ def load_document(docs_path ="Companies_10k_filing"):
         "Please Add files in Companies_10k_filing"
         
         return documents
+    
+#Making chunks
+def split_documents(documents,chunk_size=800,chunk_overlap=0):
+    print(f"Splitting documents into chunks documents:{documents}")
+    
+    #Split the document
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+        separators=[
+            "\n\n",
+            "\n",
+            ". ",
+            " ",
+            ""]
+    )
+    
+    chunks = text_splitter.split_documents(documents=documents)
+    
+    print(f"Chunks created: {len(chunks)}")
+    
+    #Add metadata
+    
+    for chunk in chunks:
+        path = Path(chunk.metadata["source"])
+        
+        company = path.parent.name
+        filename = path.stem
+        filing_year = filename.split("-")[-1]
+        
+        chunk.metadata["document_type"] = "10-K"
+        chunk.metadata["company"] = company
+        chunk.metadata["filing_year"] = int(filing_year)
+        chunk.metadata["filing"] = filename
+        
+    return chunks
     
