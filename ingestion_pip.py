@@ -7,7 +7,7 @@ import os
 
 
 #function to load_documents
-def load_document(docs_path ="Companies_10k_filing"):
+def load_document(docs_path ="./Companies_10k_filing"):
     print(f"Loading documents from {docs_path}")
     
     if not os.path.exists(docs_path):
@@ -30,7 +30,7 @@ def load_document(docs_path ="Companies_10k_filing"):
         f"No .pdf files found in {docs_path}"
         "Please Add files in Companies_10k_filing"
         
-        return documents
+    return documents
     
 #Making chunks
 def split_documents(documents,chunk_size=800,chunk_overlap=0):

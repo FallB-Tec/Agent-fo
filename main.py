@@ -15,4 +15,18 @@ model = ChatOllama(
 
 
 def main():
-    return 0;
+    #Load the documents
+    documents = ingestion_pip.load_document(docs_path="Companies_10k_filing")
+    
+    print(f"Documents loaded: {len(documents)}")
+    
+    #Split the documents into chunks
+    chunks = ingestion_pip.split_documents(documents)
+    
+    print(f"Chunks created: {len(chunks)}")
+    print(f"First chunk: {chunks[0].page_content}")
+    
+
+
+if __name__ == "__main__":
+    main()
