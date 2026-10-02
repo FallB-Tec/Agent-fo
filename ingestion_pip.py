@@ -2,6 +2,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_community.document_loaders import PyPDFLoader,DirectoryLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_chroma import Chroma
 from pathlib import Path
 import os
 
@@ -27,8 +28,10 @@ def load_document(docs_path ="./Companies_10k_filing"):
     
     #checking if there is any pdfs
     if len(documents) == 0:
-        f"No .pdf files found in {docs_path}"
-        "Please Add files in Companies_10k_filing"
+        raise ValueError(
+            f"No .pdf files found in {docs_path}"
+            "Please Add files in Companies_10k_filing"
+        )
         
     return documents
     
@@ -67,4 +70,22 @@ def split_documents(documents,chunk_size=800,chunk_overlap=0):
         chunk.metadata["filing"] = filename
         
     return chunks
+
+#Embedding the chunks than store in vectorDatabase
+
+def create_vectorstore(chunks,embedding_model_name="sentence-transformers/all-MiniLM-L6-v2",persist_directory="db/chroma_db"):
+    
+    print(f"Creating embeddings and storing in vectorstore with embedding model: {embedding_model_name}")
+    
+    embeddings = HuggingFaceEmbeddings(model_name=embedding_model_name)
+    
+    vectorstore = Chroma.from_documents(
+        documents=chunks,
+        embedding=embeddings,
+        persist_directory=persist_directory,
+        collection_metadata={"hnsw:space":"cosine"})
+    
+    print(f"Vectorstore created and persisted at {persist_directory}")
+    
+    return vectorstore
     
