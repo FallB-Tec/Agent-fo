@@ -72,7 +72,6 @@ def split_documents(documents,chunk_size=800,chunk_overlap=0):
     return chunks
 
 #Embedding the chunks than store in vectorDatabase
-
 def create_vectorstore(chunks,embedding_model_name="sentence-transformers/all-MiniLM-L6-v2",persist_directory="db/chroma_db"):
     
     print(f"Creating embeddings and storing in vectorstore with embedding model: {embedding_model_name}")
