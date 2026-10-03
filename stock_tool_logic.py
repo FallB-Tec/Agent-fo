@@ -6,7 +6,7 @@ from langchain_community.vectorstores import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings, data
 from langchain_ollama import ChatOllama
 from langgraph.checkpoint.memory import InMemorySaver
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, computed_field, field_validator, model_validator
 import yfinance as yf
 import datetime 
 
@@ -23,12 +23,30 @@ class StockData(BaseModel):
     #validate stock data model
     @model_validator(mode="after")
     def validate_stock_data(cls, model):
+        if model.open <= 0:
+            raise ValueError("Opening price must be greater than zero.")
         if model.open < 0 or model.high < 0 or model.low < 0 or model.close < 0 or model.volume < 0:
             raise ValueError("Stock prices and volume must be non-negative.")
         if model.ticker == "":
             raise ValueError("Ticker symbol cannot be empty.")
         return model 
     
+    #computed field
+    @computed_field
+    @property
+    def price_change(self) -> float:
+        return self.close - self.open
+    
+    @computed_field
+    @property
+    def price_change_percent(self) -> float:
+            return (self.price_change / self.open) * 100
+    
+    @computed_field
+    @property
+    def daily_range(self) -> float:
+        return self.high - self.low
+
 class StockDataInput(BaseModel):
     ticker: str = Field(..., description="The ticker symbol, such as AAPL.")
     start_date: datetime.date = Field(..., description="Start date in YYYY-MM-DD format.")
@@ -60,8 +78,8 @@ class StockDataInput(BaseModel):
  
  
  #OOP for stock Analysis class StockAnalyzer:
-    def __init__(self, ticker: str):
-        self.ticker = yf.Ticker(ticker)
+def __init__(self, ticker: str):
+    self.ticker = yf.Ticker(ticker)
 
     def get_stock_data(self, start_date: str, end_date: str) -> StockData:
         data = self.ticker.history(
