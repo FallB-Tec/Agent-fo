@@ -1,17 +1,7 @@
-from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
-from langchain_core.tools import create_retriever_tool
-from langchain.agents import create_agent
 from langchain_ollama import ChatOllama
+from agent import  run_agent
 import ingestion_pip
-import agent_setup
-
-#Model, it is a local model
-model = ChatOllama(
-     base_url="http://localhost:11434",
-    model="qwen3",
-    temperature=0.1
-)
 
 
 #Orchestrator function
@@ -20,7 +10,10 @@ def main():
     # vector_db_create_update()
     
     #basic retrieval to test the similarity search and retrieval of relevant documents from the vectorstore
-    agent_setup.retrieve_documents("What is the revenue of Amazon in 2022?")
+    # agent_setup.retrieve_documents("What is the revenue of Amazon in 2022?")
+    
+    run_agent()
+
 
 if __name__ == "__main__":
     main()

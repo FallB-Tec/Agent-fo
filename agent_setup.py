@@ -51,9 +51,6 @@ def get_company_stock_info(
     stock_data = stock_analyzer.get_stock_data(input_data.start_date, input_data.end_date)
 
     return stock_data.model_dump()
-
-#agent 
-
 #function
 embedding_function = HuggingFaceEmbeddings(
     model_name="sentence-transformers/all-MiniLM-L6-v2"
