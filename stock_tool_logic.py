@@ -1,4 +1,3 @@
-from pyexpat import model
 
 from langchain.agents import create_agent
 from langchain.tools import tool,ToolRuntime
@@ -8,7 +7,7 @@ from langchain_ollama import ChatOllama
 from langgraph.checkpoint.memory import InMemorySaver
 from pydantic import BaseModel, Field, computed_field, field_validator, model_validator
 import yfinance as yf
-import datetime 
+from datetime import date, timedelta,datetime
 
 
 #class
@@ -49,8 +48,8 @@ class StockData(BaseModel):
 
 class StockDataInput(BaseModel):
     ticker: str = Field(..., description="The ticker symbol, such as AAPL.")
-    start_date: datetime.date = Field(..., description="Start date in YYYY-MM-DD format.")
-    end_date: datetime.date = Field(..., description="End date in YYYY-MM-DD format.")
+    start_date: date = Field(..., description="Start date in YYYY-MM-DD format.")
+    end_date:  date = Field(..., description="End date in YYYY-MM-DD format.")
     
     @field_validator("ticker")
     def validate_ticker(cls, value):
@@ -65,7 +64,7 @@ class StockDataInput(BaseModel):
 
     @field_validator("start_date", "end_date")
     def validate_date_format(cls, value):
-        if not isinstance(value, datetime.date):
+        if not isinstance(value, date):
             raise ValueError("Date must be in YYYY-MM-DD format.")
         return value
     
@@ -78,21 +77,41 @@ class StockDataInput(BaseModel):
  
  
  #OOP for stock Analysis class StockAnalyzer:
+from datetime import date, timedelta
+
 class StockAnalyzer:
     def __init__(self, ticker: str):
         self.ticker = yf.Ticker(ticker)
 
-    def get_stock_data(self, start_date: str, end_date: str) -> StockData:
+    def get_stock_data(
+        self,
+        start_date: date,
+        end_date: date
+    ) -> list[StockData]:
+
+        # Check if requested dates fall on a weekend
+        if start_date.weekday() >= 5 or end_date.weekday() >= 5:
+            raise ValueError(
+                f"Stock market data is not available on weekends. "
+                f"Requested period: {start_date} to {end_date}."
+            )
+
+        # yfinance end date is exclusive, so add one day
+        end_date = end_date + timedelta(days=1)
+
         data = self.ticker.history(
             start=start_date,
             end=end_date
         )
 
-        #getting  all the data for the given date range and returning the stock data model
         if data.empty:
-            raise ValueError(f"No data found for ticker {self.ticker.ticker} between {start_date} and {end_date}.")
-        stock_data =  []
-        
+            raise ValueError(
+                f"No data found for ticker {self.ticker.ticker} "
+                f"between {start_date} and {end_date - timedelta(days=1)}."
+            )
+
+        stock_data = []
+
         for date, row in data.iterrows():
             stock_day = StockData(
                 ticker=self.ticker.ticker,
