@@ -78,20 +78,33 @@ class StockDataInput(BaseModel):
  
  
  #OOP for stock Analysis class StockAnalyzer:
-def __init__(self, ticker: str):
-    self.ticker = yf.Ticker(ticker)
+class StockAnalyzer:
+    def __init__(self, ticker: str):
+        self.ticker = yf.Ticker(ticker)
 
     def get_stock_data(self, start_date: str, end_date: str) -> StockData:
         data = self.ticker.history(
             start=start_date,
-            end=end_date)
-
-        return StockData(
-            ticker=self.ticker.ticker,
-            open=float(data["Open"]),
-            high=float(data["High"]),
-            low=float(data["Low"]),
-            close=float(data["Close"]),
-            volume=int(data["Volume"]),
+            end=end_date
         )
+
+        #getting  all the data for the given date range and returning the stock data model
+        if data.empty:
+            raise ValueError(f"No data found for ticker {self.ticker.ticker} between {start_date} and {end_date}.")
+        stock_data =  []
+        
+        for date, row in data.iterrows():
+            stock_day = StockData(
+                ticker=self.ticker.ticker,
+                date=date.date(),
+                open=float(row["Open"]),
+                high=float(row["High"]),
+                low=float(row["Low"]),
+                close=float(row["Close"]),
+                volume=int(row["Volume"]),
+            )
+
+            stock_data.append(stock_day)
+
+        return stock_data
  
