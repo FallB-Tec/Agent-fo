@@ -6,6 +6,7 @@ from langchain_ollama import ChatOllama
 from langgraph.checkpoint.memory import InMemorySaver
 from pydantic import BaseModel, Field
 from datetime import datetime
+import yfinance as yf
 
 
 
@@ -20,8 +21,8 @@ from datetime import datetime
 def get_date() -> str:
     return datetime.now().strftime("%Y-%m-%d")
 
-#1.Tool to retrieve relevant financial documents from the vectorstore
-# @tool("retrieve_documents",description="Retrieve relevant documents from the vectorstore based on a query",return_direct=True)
+#2.Tool to retrieve relevant financial documents from the vectorstore
+@tool("retrieve_documents",description="Retrieve relevant documents from the vectorstore based on a query",return_direct=True)
 def retrieve_documents(query: str) -> list:
     relevant_docs = retriever.invoke(query)
     
@@ -33,6 +34,11 @@ def retrieve_documents(query: str) -> list:
         print(f"Retrieved document: {doc.page_content[:500]}...")  # Print the first 500 characters of the document content
 
     return relevant_docs
+
+#3.Tool to get stock information using yfinance
+@tool("get_company_stock_info",description="Get the stock information of a company given its ticker symbol such as AAPL",return_direct=True)
+def get_company_stock_info(ticker: str) -> dict:
+    return 0
 
 #agent 
 
