@@ -3,9 +3,6 @@ from langchain_ollama import ChatOllama
 from langgraph.checkpoint.memory import InMemorySaver
 from agent_setup import get_company_stock_info, get_date, retrieve_documents
 
-
-
-#model
 #Model, it is a local model
 model = ChatOllama(
      base_url="http://localhost:11434",
@@ -37,7 +34,7 @@ def run_agent():
         question = input("\nYou: ")
 
         if question.lower() in {"exit", "quit"}:
-            print("Goodbye!")
+            print("Goodbye!") 
             break
 
         print("Assistant: ", end="", flush=True)

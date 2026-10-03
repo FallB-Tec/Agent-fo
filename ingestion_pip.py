@@ -87,4 +87,20 @@ def create_vectorstore(chunks,embedding_model_name="sentence-transformers/all-Mi
     print(f"Vectorstore created and persisted at {persist_directory}")
     
     return vectorstore
-    
+ 
+  
+#separate function to create or update the vector database 
+def vector_db_create_update():
+     #Load the documents
+    documents = load_document(docs_path="C:\\Users\\PcSuu\\OneDrive\\Desktop\\Companies_10k_filing")
+        
+    # print(f"Documents loaded: {len(documents)}")
+        
+     #Split the documents into chunks
+    chunks = split_documents(documents)
+        
+    # print(f"Chunks created: {len(chunks)}")
+    print(f"First chunk: {chunks[0].page_content}")
+        
+    vectorstore = create_vectorstore(chunks)
+    print(f"Vectorstore created with {vectorstore._collection.count()} vectors")  

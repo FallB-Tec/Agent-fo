@@ -18,21 +18,6 @@ def main():
 if __name__ == "__main__":
     main()
 
-
-#separate function to create or update the vector database 
-def vector_db_create_update():
-     #Load the documents
-    documents = ingestion_pip.load_document(docs_path="C:\\Users\\PcSuu\\OneDrive\\Desktop\\Companies_10k_filing")
-        
-    # print(f"Documents loaded: {len(documents)}")
-        
-     #Split the documents into chunks
-    chunks = ingestion_pip.split_documents(documents)
-        
-    # print(f"Chunks created: {len(chunks)}")
-    print(f"First chunk: {chunks[0].page_content}")
-        
-    vectorstore = ingestion_pip.create_vectorstore(chunks)
-    print(f"Vectorstore created with {vectorstore._collection.count()} vectors")
+    
     
     
