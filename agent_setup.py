@@ -7,13 +7,7 @@ from langgraph.checkpoint.memory import InMemorySaver
 from pydantic import BaseModel, Field
 from datetime import datetime
 import yfinance as yf
-
-
-
-#Class
-
-
-
+from stock_tool_logic import StockAnalyzer, StockDataInput
 
 #Tools
 #1.Simple tool to get the current time
@@ -35,10 +29,28 @@ def retrieve_documents(query: str) -> list:
 
     return relevant_docs
 
-#3.Tool to get stock information using yfinance
-@tool("get_company_stock_info",description="Get the stock information of a company given its ticker symbol such as AAPL",return_direct=True)
-def get_company_stock_info(ticker: str) -> dict:
-    return 0
+#3.Tool to get stock information 
+@tool(
+    "get_company_stock_info",
+    description=(
+        "Retrieve historical stock market data for a company. "
+        "Use this tool when stock price or trading-volume information is needed. "
+        "Provide the company's ticker symbol and the start and end dates "
+        "for the requested historical period."
+    ),
+    return_direct=True,
+)
+def get_company_stock_info(
+    ticker: str,
+    start_date: str,
+    end_date: str,
+) -> dict:
+    
+    input_data = StockDataInput(ticker=ticker, start_date=start_date, end_date=end_date)
+    stock_analyzer = StockAnalyzer(input_data.ticker)
+    stock_data = stock_analyzer.get_stock_data(input_data.start_date, input_data.end_date)
+
+    return stock_data.model_dump()
 
 #agent 
 
