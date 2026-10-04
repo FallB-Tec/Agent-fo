@@ -1,21 +1,19 @@
-from os import error
-
+from dataclasses import dataclass
 from langchain.agents import create_agent
-from langchain.tools import tool,ToolRuntime
+from langchain.tools import tool
 from langchain_community.vectorstores import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_ollama import ChatOllama
-from langgraph.checkpoint.memory import InMemorySaver
 from pydantic import BaseModel, Field
 from datetime import datetime
-import yfinance as yf
 from stock_tool_logic import StockAnalyzer, StockDataInput
+
+
 
 #Tools
 #1.Simple tool to get the current time
-@tool("get_date",description="Get the current date in the format YYYY-MM-DD",return_direct=False)
+@tool("get_date",description="Get the current date in the format YYYY-MM-DD and the day of the week",return_direct=False)
 def get_date() -> str:
-    return datetime.now().strftime("%Y-%m-%d")
+    return datetime.now().strftime("%Y-%m-%d %A")
 
 #2.Tool to retrieve relevant financial documents from the vectorstore
 @tool("retrieve_documents",description="Retrieve relevant documents from the vectorstore based on a query",return_direct=False)
@@ -48,7 +46,7 @@ def retrieve_documents(query: str) -> list:
         Do not assume, guess, or use your internal knowledge for the current
         date or time.
 
-        After determining the correct dates, call get_company_stock_info with
+        After determining the correct dates, see if it is a week end day than adjust the day then call get_company_stock_info with
         the calculated dates.
         
         Use the date returned by get_time as the reference point for calculating
@@ -94,3 +92,10 @@ retriever = db.as_retriever(
         "score_threshold": 0.3
     }
 )
+
+#response format for agent
+@dataclass
+class ResponseFormat:
+    summary: str
+    data: dict
+    metadata: dict

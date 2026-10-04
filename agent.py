@@ -1,7 +1,7 @@
 from langchain.agents import create_agent
 from langchain_ollama import ChatOllama
 from langgraph.checkpoint.memory import InMemorySaver
-from agent_setup import get_company_stock_info, get_date, retrieve_documents
+from agent_setup import ResponseFormat, get_company_stock_info, get_date, retrieve_documents
 
 #Model, it is a local model
 model = ChatOllama(
@@ -26,7 +26,8 @@ agent = create_agent(
     model=model,
     tools=[get_company_stock_info, get_date, retrieve_documents],
     system_prompt="You are a financial assistant. You have access to the following tools: get_company_stock_info, get_date, retrieve_documents. Use these tools to provide accurate and relevant information to the user.",
-    checkpointer=checkpointer
+    checkpointer=checkpointer,
+    response_format=ResponseFormat
 )
 
 def run_agent():
