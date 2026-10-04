@@ -30,7 +30,20 @@ def get_date() -> str:
     return datetime.now().strftime("%Y-%m-%d %A")
 
 #2.Tool to retrieve relevant financial documents from the vectorstore
-@tool("retrieve_documents",description="Retrieve relevant documents from the vectorstore based on a query",return_direct=False)
+@tool("retrieve_documents",description=
+    "Retrieve relevant information from the company's financial filings "
+    "stored in the vector database. Use this tool when answering questions "
+    "about information contained in 10-K filings, including business "
+    "operations, financial performance, revenue, expenses, risks, assets, "
+    "liabilities, cash flow, business segments, management discussion, "
+    "accounting information, and other filing-specific information. "
+    "When the user specifies a company, include the company name in the "
+    "query so the retrieval system can identify the relevant documents. "
+    "Use this tool for document-based financial information, not for "
+    "current or historical stock prices, trading volume, or stock-price "
+    "calculations. For those requests, use the appropriate stock-data or "
+    "metrics tool. Base document-related answers only on information "
+    "supported by the retrieved documents.",return_direct=False)
 def retrieve_documents(query: str) -> list:
     relevant_docs = retriever.invoke(query)
     
