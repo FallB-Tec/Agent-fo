@@ -1,3 +1,5 @@
+from os import error
+
 from langchain.agents import create_agent
 from langchain.tools import tool,ToolRuntime
 from langchain_community.vectorstores import Chroma
@@ -54,18 +56,26 @@ def retrieve_documents(query: str) -> list:
     ),
     return_direct=False,
 )
-
 def get_company_stock_info(
     ticker: str,
     start_date: str,
     end_date: str,
 ) -> list:
     
-    input_data = StockDataInput(ticker=ticker, start_date=start_date, end_date=end_date)
-    stock_analyzer = StockAnalyzer(input_data.ticker)
-    stock_data = stock_analyzer.get_stock_data(input_data.start_date, input_data.end_date)
+    #catching any ValueError exceptions that may arise from invalid input data
+    try:
+        input_data = StockDataInput(ticker=ticker, start_date=start_date, end_date=end_date)
+        stock_analyzer = StockAnalyzer(input_data.ticker)
+        stock_data = stock_analyzer.get_stock_data(input_data.start_date, input_data.end_date)
 
-    return stock_data
+        return stock_data
+    except ValueError as e:
+        return {
+            "error": str(e)
+        }
+   
+       
+
 #function
 embedding_function = HuggingFaceEmbeddings(
     model_name="sentence-transformers/all-MiniLM-L6-v2"

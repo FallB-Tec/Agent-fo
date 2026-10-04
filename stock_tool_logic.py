@@ -7,12 +7,13 @@ from langchain_ollama import ChatOllama
 from langgraph.checkpoint.memory import InMemorySaver
 from pydantic import BaseModel, Field, computed_field, field_validator, model_validator
 import yfinance as yf
-from datetime import date, timedelta,datetime
+from datetime import date as Date, timedelta,datetime
 
 
 #class
 class StockData(BaseModel):
     ticker: str = Field(..., description="The ticker symbol of the company.")
+    date:Date = Field(..., description="The date of the stock data in YYYY-MM-DD format.")
     open: float = Field(..., description="The opening price of the stock")
     high: float = Field(..., description="The highest price of the stock")
     low: float = Field(..., description="The lowest price of the stock")
@@ -48,8 +49,8 @@ class StockData(BaseModel):
 
 class StockDataInput(BaseModel):
     ticker: str = Field(..., description="The ticker symbol, such as AAPL.")
-    start_date: date = Field(..., description="Start date in YYYY-MM-DD format.")
-    end_date:  date = Field(..., description="End date in YYYY-MM-DD format.")
+    start_date: Date = Field(..., description="Start date in YYYY-MM-DD format.")
+    end_date:  Date = Field(..., description="End date in YYYY-MM-DD format.")
     
     @field_validator("ticker")
     def validate_ticker(cls, value):
@@ -64,7 +65,7 @@ class StockDataInput(BaseModel):
 
     @field_validator("start_date", "end_date")
     def validate_date_format(cls, value):
-        if not isinstance(value, date):
+        if not isinstance(value, Date):
             raise ValueError("Date must be in YYYY-MM-DD format.")
         return value
     
@@ -77,16 +78,14 @@ class StockDataInput(BaseModel):
  
  
  #OOP for stock Analysis class StockAnalyzer:
-from datetime import date, timedelta
-
 class StockAnalyzer:
     def __init__(self, ticker: str):
         self.ticker = yf.Ticker(ticker)
 
     def get_stock_data(
         self,
-        start_date: date,
-        end_date: date
+        start_date: Date,
+        end_date: Date
     ) -> list[StockData]:
 
         # Check if requested dates fall on a weekend
