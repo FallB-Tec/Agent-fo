@@ -1,13 +1,29 @@
 from dataclasses import dataclass
+from typing import Literal
 from langchain.agents import create_agent
 from langchain.tools import tool
 from langchain_community.vectorstores import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
 from pydantic import BaseModel, Field
-from datetime import datetime
+from datetime import date as Date, datetime
 from stock_tool_logic import StockAnalyzer, StockDataInput
 
 
+#constant
+Metric = Literal[
+    "highest_close",
+    "lowest_close",
+    "average_close",
+    "price_change",
+    "percentage_change",
+    "highest_high",
+    "lowest_low",
+    "average_high",
+    "average_low",
+    "average_volume",
+    "highest_close_date",
+    "lowest_close_date",
+]
 
 #Tools
 #1.Simple tool to get the current time
@@ -46,7 +62,7 @@ def retrieve_documents(query: str) -> list:
         Do not assume, guess, or use your internal knowledge for the current
         date or time.
 
-        After determining the correct dates, see if it is a week end day than adjust the day then call get_company_stock_info with
+        After determining the correct dates, see if it is a week end day than adjust the day then call get_company_stock_info or company_metrics with
         the calculated dates.
         
         Use the date returned by get_time as the reference point for calculating
@@ -57,7 +73,7 @@ def retrieve_documents(query: str) -> list:
 def get_company_stock_info(
     ticker: str,
     start_date: str,
-    end_date: str,
+    end_date: str
 ) -> list:
     
     #catching any ValueError exceptions that may arise from invalid input data
@@ -69,6 +85,210 @@ def get_company_stock_info(
         return stock_data
     except ValueError as e:
         return {
+            "error": str(e)
+        }
+        
+#tool to calculate metrics for stock data
+@tool
+def company_metrics(
+    ticker: str,
+    start_date: Date,
+    end_date: Date,
+    metric: Metric,
+) -> dict:
+    """
+    Calculate metrics from historical stock data.
+
+    Use this tool for questions about:
+    - highest or lowest prices
+    - highest or lowest closing prices
+    - average prices
+    - price changes
+    - percentage changes
+    - trading volume
+    - dates of highest or lowest closing prices
+
+    ticker:
+        Stock ticker symbol, such as NVDA, AMZN, or AAPL.
+
+    start_date:
+        Beginning of the requested period.
+
+    end_date:
+        End of the requested period.
+
+    metric:
+        The metric to calculate.
+    """
+
+    try:
+        analyzer = StockAnalyzer(ticker)
+
+        # Retrieve raw stock data
+        stock_data = analyzer.get_stock_data(
+            start_date=start_date,
+            end_date=end_date
+        )
+
+        if not stock_data:
+            return {
+                "success": False,
+                "error": "No stock data found for the requested period."
+            }
+
+        # --------------------------------------------------
+        # HIGH / LOW
+        # --------------------------------------------------
+
+        if metric == "highest_close":
+            result = max(stock_data, key=lambda x: x.close)
+
+            data = {
+                "date": result.date.isoformat(),
+                "close": result.close,
+            }
+
+        elif metric == "lowest_close":
+            result = min(stock_data, key=lambda x: x.close)
+
+            data = {
+                "date": result.date.isoformat(),
+                "close": result.close,
+            }
+
+        elif metric == "highest_high":
+            result = max(stock_data, key=lambda x: x.high)
+
+            data = {
+                "date": result.date.isoformat(),
+                "high": result.high,
+            }
+
+        elif metric == "lowest_low":
+            result = min(stock_data, key=lambda x: x.low)
+
+            data = {
+                "date": result.date.isoformat(),
+                "low": result.low,
+            }
+
+        # --------------------------------------------------
+        # AVERAGES
+        # --------------------------------------------------
+
+        elif metric == "average_close":
+            average = sum(
+                day.close for day in stock_data
+            ) / len(stock_data)
+
+            data = {
+                "average_close": average
+            }
+
+        elif metric == "average_high":
+            average = sum(
+                day.high for day in stock_data
+            ) / len(stock_data)
+
+            data = {
+                "average_high": average
+            }
+
+        elif metric == "average_low":
+            average = sum(
+                day.low for day in stock_data
+            ) / len(stock_data)
+
+            data = {
+                "average_low": average
+            }
+
+        elif metric == "average_volume":
+            average = sum(
+                day.volume for day in stock_data
+            ) / len(stock_data)
+
+            data = {
+                "average_volume": average
+            }
+
+        # --------------------------------------------------
+        # PRICE CHANGE
+        # --------------------------------------------------
+
+        elif metric == "price_change":
+            first_close = stock_data[0].close
+            last_close = stock_data[-1].close
+
+            data = {
+                "start_date": stock_data[0].date.isoformat(),
+                "end_date": stock_data[-1].date.isoformat(),
+                "start_close": first_close,
+                "end_close": last_close,
+                "price_change": last_close - first_close,
+            }
+
+        # --------------------------------------------------
+        # PERCENTAGE CHANGE
+        # --------------------------------------------------
+
+        elif metric == "percentage_change":
+            first_close = stock_data[0].close
+            last_close = stock_data[-1].close
+
+            percentage_change = (
+                (last_close - first_close)
+                / first_close
+            ) * 100
+
+            data = {
+                "start_date": stock_data[0].date.isoformat(),
+                "end_date": stock_data[-1].date.isoformat(),
+                "start_close": first_close,
+                "end_close": last_close,
+                "percentage_change": percentage_change,
+            }
+
+        # --------------------------------------------------
+        # DATES
+        # --------------------------------------------------
+
+        elif metric == "highest_close_date":
+            result = max(stock_data, key=lambda x: x.close)
+
+            data = {
+                "date": result.date.isoformat(),
+                "close": result.close,
+            }
+
+        elif metric == "lowest_close_date":
+            result = min(stock_data, key=lambda x: x.close)
+
+            data = {
+                "date": result.date.isoformat(),
+                "close": result.close,
+            }
+
+        else:
+            return {
+                "success": False,
+                "error": f"Unsupported metric: {metric}"
+            }
+
+        return {
+            "success": True,
+            "ticker": ticker.upper(),
+            "metric": metric,
+            "period": {
+                "start": start_date.isoformat(),
+                "end": end_date.isoformat(),
+            },
+            "data": data,
+        }
+
+    except ValueError as e:
+        return {
+            "success": False,
             "error": str(e)
         }
    
