@@ -60,24 +60,32 @@ def retrieve_documents(query: str) -> list:
 @tool(
     "get_company_stock_info",
     description=(
-        """Retrieve historical stock market data for a company. 
-        Use this tool when stock price or trading-volume information is needed. 
-        Provide the company's ticker symbol and the start and end dates 
-        for the requested historical period.You are a financial assistant.
-        
-        When a user's request depends on the current date or time, especially
-        relative expressions such as "today", "yesterday", "3 days ago",
-        "last week", or "this month", you MUST call get_time first.
+        """ Retrieve RAW historical stock market data (OHLCV) for a company.
 
-        Use the result of get_time as the reference point for calculating dates.
-        Do not assume, guess, or use your internal knowledge for the current
-        date or time.
+    Use this tool ONLY when the user explicitly requests:
+    - raw historical stock data
+    - daily stock prices
+    - daily open/high/low/close/volume
+    - a list or table of trading data over a period
 
-        After determining the correct dates, see if it is a week end day than adjust the day then call get_company_stock_info  with
-        the calculated dates.
-        
-        Use the date returned by get_time as the reference point for calculating
-        the requested date range. Do not assume or invent the current date."""
+    DO NOT use this tool when the user asks for a calculated metric.
+
+    For calculated metrics such as:
+    - highest_close
+    - lowest_close
+    - average_close
+    - highest_high
+    - lowest_low
+    - average_high
+    - average_low
+    - average_volume
+    - price_change
+    - percentage_change
+
+    use company_metrics instead.
+
+    When a request uses relative dates such as "today", "yesterday",
+    "last week", or "this month", call get_date first."""
     ),
     return_direct=False,
 )
@@ -101,14 +109,27 @@ def get_company_stock_info(
         
 #tool to calculate metrics for stock data
 @tool("company_metrics", description=(
-        "Calculate a specific stock metric for a ticker over an inclusive "
-        "date range. Use for: highest_close, lowest_close, average_close, "
-        "highest_high, lowest_low, average_high, average_low, "
-        "average_volume, price_change, and percentage_change. "
-        "Use highest_close/lowest_close for closing prices and "
-        "highest_high/lowest_low for intraday High/Low prices. "
-        "All numerical calculations are performed from historical market "
-        "data, not by the language model."
+        """Calculate a stock metric over an inclusive date range.
+
+    MUST use this tool for:
+    - highest_close
+    - lowest_close
+    - average_close
+    - highest_high
+    - lowest_low
+    - average_high
+    - average_low
+    - average_volume
+    - price_change
+    - percentage_change
+
+    Do NOT use get_company_stock_info to calculate these metrics manually.
+
+    get_company_stock_info is only for returning raw historical OHLCV
+    data.
+
+    All calculations are performed deterministically from historical
+    market data, not by the language model.."""
     ))
 def company_metrics(
     ticker: str,
@@ -306,5 +327,5 @@ retriever = db.as_retriever(
 @dataclass
 class ResponseFormat:
     summary: str
-    data: dict
-    metadata: dict
+    data: dict 
+    metadata: dict 

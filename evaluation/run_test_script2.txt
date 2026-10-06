@@ -1,0 +1,738 @@
+from pathlib import Path
+import sys
+import json
+
+# ============================================================
+# IMPORT PROJECT
+# ============================================================
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
+
+from agent import agent
+from test_cases import TEST_CASES
+
+
+# ============================================================
+# CONFIGURATION
+# ============================================================
+
+MAX_TESTS = None
+
+# True:
+#   Save results to evaluation/results.json
+#
+# False:
+#   Only print results
+SAVE_RESULTS = True
+
+RESULTS_PATH = Path(__file__).resolve().parent / "results.json"
+
+
+# ============================================================
+# TOOL CALL EXTRACTION
+# ============================================================
+
+def get_tool_calls(result):
+    """
+    Extract all tool calls made by the agent.
+    """
+
+    tool_calls = []
+
+    for message in result["messages"]:
+
+        if hasattr(message, "tool_calls") and message.tool_calls:
+
+            for call in message.tool_calls:
+
+                tool_calls.append({
+                    "name": call["name"],
+                    "args": call.get("args", {})
+                })
+
+    return tool_calls
+
+
+# ============================================================
+# FINAL RESPONSE
+# ============================================================
+
+def get_final_response(result):
+    """
+    Get the latest AI response containing text.
+    """
+
+    messages = result["messages"]
+
+    for message in reversed(messages):
+
+        if getattr(message, "type", None) != "ai":
+            continue
+
+        content = getattr(message, "content", "")
+
+        if isinstance(content, str) and content.strip():
+            return content.strip()
+
+    return ""
+
+
+# ============================================================
+# TOOL HELPERS
+# ============================================================
+
+def get_tool_names(tool_calls):
+    """
+    Return tool names in the order they were called.
+    """
+
+    return [tool["name"] for tool in tool_calls]
+
+
+def check_expected_tools(actual_tools, expected_tools):
+    """
+    Check whether every required tool was used.
+    """
+
+    actual_names = get_tool_names(actual_tools)
+
+    missing = []
+
+    for expected in expected_tools:
+
+        if expected not in actual_names:
+            missing.append(expected)
+
+    return missing
+
+
+def check_acceptable_tools(actual_tools, acceptable_tools):
+    """
+    Check whether at least one acceptable tool was used.
+
+    This is useful for tests where multiple implementations
+    can reasonably produce the correct answer.
+    """
+
+    if not acceptable_tools:
+        return True
+
+    actual_names = get_tool_names(actual_tools)
+
+    return any(
+        tool in acceptable_tools
+        for tool in actual_names
+    )
+
+
+def check_ideal_tool(actual_tools, ideal_tool):
+    """
+    Check whether the preferred tool was used.
+    """
+
+    if not ideal_tool:
+        return None
+
+    actual_names = get_tool_names(actual_tools)
+
+    return ideal_tool in actual_names
+
+
+def check_forbidden_tools(actual_tools, forbidden_tools):
+    """
+    Check whether forbidden tools were used.
+    """
+
+    actual_names = get_tool_names(actual_tools)
+
+    unexpected = []
+
+    for forbidden in forbidden_tools:
+
+        if forbidden in actual_names:
+            unexpected.append(forbidden)
+
+    return unexpected
+
+
+# ============================================================
+# METRIC VALIDATION
+# ============================================================
+
+def check_expected_metric(actual_tools, expected_metric):
+    """
+    Check whether company_metrics received the expected metric.
+    """
+
+    for tool in actual_tools:
+
+        if tool["name"] != "company_metrics":
+            continue
+
+        metric = tool["args"].get("metric")
+
+        if metric == expected_metric:
+            return True
+
+    return False
+
+
+# ============================================================
+# TICKER VALIDATION
+# ============================================================
+
+def check_expected_tickers(actual_tools, expected_tickers):
+    """
+    Check whether all expected tickers were requested.
+    """
+
+    actual_tickers = []
+
+    for tool in actual_tools:
+
+        if tool["name"] != "get_company_stock_info":
+            continue
+
+        ticker = tool["args"].get("ticker")
+
+        if ticker:
+            actual_tickers.append(ticker.upper())
+
+    missing = []
+
+    for ticker in expected_tickers:
+
+        if ticker.upper() not in actual_tickers:
+            missing.append(ticker)
+
+    return missing
+
+
+# ============================================================
+# TOOL ROUTING EVALUATION
+# ============================================================
+
+def evaluate_tool_routing(test, actual_tools):
+    """
+    Evaluate tool usage separately from answer correctness.
+
+    Returns:
+        status:
+            PASS
+            PARTIAL
+            FAIL
+            NOT_APPLICABLE
+    """
+
+    expected_tools = test.get("expected_tools", [])
+
+    ideal_tool = test.get("ideal_tool")
+
+    acceptable_tools = test.get(
+        "acceptable_tools",
+        []
+    )
+
+    forbidden_tools = test.get(
+        "must_not_use",
+        []
+    )
+
+    # --------------------------------------------------------
+    # Forbidden tools
+    # --------------------------------------------------------
+
+    unexpected = check_forbidden_tools(
+        actual_tools,
+        forbidden_tools
+    )
+
+    if unexpected:
+        return {
+            "status": "FAIL",
+            "reason": f"Forbidden tools used: {unexpected}"
+        }
+
+    # --------------------------------------------------------
+    # Explicit expected tools
+    # --------------------------------------------------------
+
+    if expected_tools:
+
+        missing = check_expected_tools(
+            actual_tools,
+            expected_tools
+        )
+
+        if not missing:
+            return {
+                "status": "PASS",
+                "reason": "All expected tools were used."
+            }
+
+        # Some required tools were missing.
+        return {
+            "status": "FAIL",
+            "reason": f"Missing tools: {missing}"
+        }
+
+    # --------------------------------------------------------
+    # Ideal / acceptable routing
+    # --------------------------------------------------------
+
+    if ideal_tool:
+
+        ideal_used = check_ideal_tool(
+            actual_tools,
+            ideal_tool
+        )
+
+        if ideal_used:
+            return {
+                "status": "PASS",
+                "reason": f"Ideal tool used: {ideal_tool}"
+            }
+
+        acceptable_used = check_acceptable_tools(
+            actual_tools,
+            acceptable_tools
+        )
+
+        if acceptable_used:
+            return {
+                "status": "PARTIAL",
+                "reason": (
+                    f"Ideal tool '{ideal_tool}' was not used, "
+                    "but an acceptable tool was used."
+                )
+            }
+
+        return {
+            "status": "FAIL",
+            "reason": "No acceptable tool was used."
+        }
+
+    # --------------------------------------------------------
+    # No tools expected
+    # --------------------------------------------------------
+
+    if not expected_tools and not ideal_tool:
+
+        if actual_tools:
+            return {
+                "status": "FAIL",
+                "reason": (
+                    "Tools were used when no tools were expected."
+                )
+            }
+
+        return {
+            "status": "PASS",
+            "reason": "No tools were used."
+        }
+
+    return {
+        "status": "NOT_APPLICABLE",
+        "reason": ""
+    }
+
+
+# ============================================================
+# RUN SINGLE TEST
+# ============================================================
+
+def run_test(test):
+
+    test_id = test["id"]
+    scenario = test["scenario"]
+
+    print("\n" + "=" * 70)
+    print(f"TEST {test_id}: {scenario}")
+    print("=" * 70)
+
+    # --------------------------------------------------------
+    # Questions
+    # --------------------------------------------------------
+
+    if "question" in test:
+
+        questions = [test["question"]]
+
+    elif "conversation" in test:
+
+        questions = test["conversation"]
+
+    else:
+
+        print("ERROR: Test has no question or conversation.")
+
+        return {
+            "id": test_id,
+            "status": "ERROR"
+        }
+
+    # --------------------------------------------------------
+    # Unique thread
+    # --------------------------------------------------------
+
+    thread_id = f"evaluation_test_{test_id}"
+
+    config = {
+        "configurable": {
+            "thread_id": thread_id
+        }
+    }
+
+    all_tool_calls = []
+    final_response = ""
+
+    # --------------------------------------------------------
+    # Run agent
+    # --------------------------------------------------------
+
+    runtime_error = None
+
+    try:
+
+        for question in questions:
+
+            result = agent.invoke(
+                {
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": question
+                        }
+                    ]
+                },
+                config=config
+            )
+
+            tool_calls = get_tool_calls(result)
+
+            all_tool_calls.extend(tool_calls)
+
+            final_response = get_final_response(result)
+
+    except Exception as e:
+
+        runtime_error = {
+            "type": type(e).__name__,
+            "message": str(e)
+        }
+
+    # --------------------------------------------------------
+    # Runtime error
+    # --------------------------------------------------------
+
+    if runtime_error:
+
+        print("\nRUNTIME ERROR:")
+        print(
+            f"{runtime_error['type']}: "
+            f"{runtime_error['message']}"
+        )
+
+        return {
+            "id": test_id,
+            "scenario": scenario,
+            "questions": questions,
+            "tool_calls": all_tool_calls,
+            "final_response": "",
+            "tool_routing": {
+                "status": "FAIL",
+                "reason": "Agent runtime error."
+            },
+            "answer_correctness": "UNKNOWN",
+            "overall": "RUNTIME_ERROR",
+            "runtime_error": runtime_error
+        }
+
+    # --------------------------------------------------------
+    # Tool routing
+    # --------------------------------------------------------
+
+    routing = evaluate_tool_routing(
+        test,
+        all_tool_calls
+    )
+
+    # --------------------------------------------------------
+    # Metric validation
+    # --------------------------------------------------------
+
+    metric_result = None
+
+    expected_metric = test.get("expected_metric")
+
+    if expected_metric:
+
+        metric_ok = check_expected_metric(
+            all_tool_calls,
+            expected_metric
+        )
+
+        metric_result = {
+            "expected": expected_metric,
+            "passed": metric_ok
+        }
+
+    # --------------------------------------------------------
+    # Ticker validation
+    # --------------------------------------------------------
+
+    ticker_result = None
+
+    expected_tickers = test.get("expected_tickers")
+
+    if expected_tickers:
+
+        missing_tickers = check_expected_tickers(
+            all_tool_calls,
+            expected_tickers
+        )
+
+        ticker_result = {
+            "expected": expected_tickers,
+            "missing": missing_tickers,
+            "passed": not missing_tickers
+        }
+
+    # --------------------------------------------------------
+    # Print question
+    # --------------------------------------------------------
+
+    print("\nQUESTION:")
+
+    for question in questions:
+        print(f"  {question}")
+
+    # --------------------------------------------------------
+    # Tool calls
+    # --------------------------------------------------------
+
+    print("\nACTUAL TOOL CALLS:")
+
+    if all_tool_calls:
+
+        for call in all_tool_calls:
+
+            print(f"  {call['name']}")
+
+            if call["args"]:
+                print(f"    args: {call['args']}")
+
+    else:
+
+        print("  None")
+
+    # --------------------------------------------------------
+    # Routing result
+    # --------------------------------------------------------
+
+    print("\nTOOL ROUTING:")
+
+    print(
+        f"  {routing['status']}: "
+        f"{routing['reason']}"
+    )
+
+    # --------------------------------------------------------
+    # Final response
+    # --------------------------------------------------------
+
+    print("\nFINAL RESPONSE:")
+
+    if final_response:
+        print(final_response)
+    else:
+        print("  [NO RESPONSE]")
+
+    # --------------------------------------------------------
+    # IMPORTANT:
+    #
+    # We do NOT automatically mark answer correctness here.
+    #
+    # A human or separate evaluator should inspect whether
+    # the final answer is actually correct.
+    # --------------------------------------------------------
+
+    answer_correctness = "UNREVIEWED"
+
+    # --------------------------------------------------------
+    # Overall
+    # --------------------------------------------------------
+
+    # At this stage:
+    #
+    # - Tool routing is automatically evaluated.
+    # - Answer correctness is manually reviewed.
+    #
+    # Therefore the automatic overall result is not yet
+    # a final benchmark score.
+
+    if routing["status"] == "FAIL":
+
+        automatic_status = "ROUTING_FAIL"
+
+    elif routing["status"] == "PARTIAL":
+
+        automatic_status = "ROUTING_PARTIAL"
+
+    else:
+
+        automatic_status = "ROUTING_PASS"
+
+    result = {
+        "id": test_id,
+        "scenario": scenario,
+        "questions": questions,
+        "tool_calls": all_tool_calls,
+        "final_response": final_response,
+        "tool_routing": routing,
+        "answer_correctness": answer_correctness,
+        "metric": metric_result,
+        "tickers": ticker_result,
+        "automatic_status": automatic_status
+    }
+
+    return result
+
+
+# ============================================================
+# MAIN
+# ============================================================
+
+def main():
+
+    tests = TEST_CASES
+
+    if MAX_TESTS is not None:
+        tests = tests[:MAX_TESTS]
+
+    total = len(tests)
+
+    results = []
+
+    print("=" * 70)
+    print("AGENT EVALUATION")
+    print("=" * 70)
+
+    print(f"\nTests to run: {total}")
+
+    # --------------------------------------------------------
+    # Run tests
+    # --------------------------------------------------------
+
+    for test in tests:
+
+        result = run_test(test)
+
+        results.append(result)
+
+    # --------------------------------------------------------
+    # Automatic routing statistics
+    # --------------------------------------------------------
+
+    routing_pass = 0
+    routing_partial = 0
+    routing_fail = 0
+
+    for result in results:
+
+        status = result.get(
+            "tool_routing",
+            {}
+        ).get("status")
+
+        if status == "PASS":
+            routing_pass += 1
+
+        elif status == "PARTIAL":
+            routing_partial += 1
+
+        elif status == "FAIL":
+            routing_fail += 1
+
+    # --------------------------------------------------------
+    # Summary
+    # --------------------------------------------------------
+
+    print("\n\n" + "=" * 70)
+    print("EVALUATION SUMMARY")
+    print("=" * 70)
+
+    print(f"\nTotal tests:          {total}")
+
+    print(
+        f"Routing pass:        "
+        f"{routing_pass}"
+    )
+
+    print(
+        f"Routing partial:     "
+        f"{routing_partial}"
+    )
+
+    print(
+        f"Routing fail:        "
+        f"{routing_fail}"
+    )
+
+    if total > 0:
+
+        routing_score = (
+            routing_pass / total
+        ) * 100
+
+        print(
+            f"\nRouting score:       "
+            f"{routing_score:.1f}%"
+        )
+
+    print(
+        "\nAnswer correctness:   "
+        "MANUAL REVIEW REQUIRED"
+    )
+
+    # --------------------------------------------------------
+    # Save results
+    # --------------------------------------------------------
+
+    if SAVE_RESULTS:
+
+        with open(
+            RESULTS_PATH,
+            "w",
+            encoding="utf-8"
+        ) as f:
+
+            json.dump(
+                results,
+                f,
+                indent=4,
+                ensure_ascii=False
+            )
+
+        print(
+            f"\nResults saved to:"
+            f"\n{RESULTS_PATH}"
+        )
+
+    print(
+        "\nIMPORTANT:"
+        "\nThe routing score is NOT the overall agent score."
+        "\nReview final responses separately for answer correctness."
+    )
+
+    return 0
+
+
+# ============================================================
+# ENTRY POINT
+# ============================================================
+
+if __name__ == "__main__":
+
+    raise SystemExit(main())

@@ -2,15 +2,17 @@ from langchain.agents import create_agent
 from langchain.messages import AIMessage
 from langchain_ollama import ChatOllama
 from langgraph.checkpoint.memory import InMemorySaver
-from agent_setup import ResponseFormat, get_company_stock_info, get_date, retrieve_documents
+from agent_setup import ResponseFormat, company_metrics, get_company_stock_info, get_date, retrieve_documents
+from dotenv import load_dotenv
+from langchain_openai import ChatOpenAI
+import os
 
-#Model, it is a local model
+#Model, it is a local model 5b params q4
 model = ChatOllama(
      base_url="http://localhost:11434",
-    model="qwen3",
+    model="qwen3:14b",
     temperature=0.1
 )
-
 #allow to save chat history
 checkpointer = InMemorySaver()
 
@@ -24,8 +26,8 @@ config = {
 
 #agent 
 agent = create_agent(
-    model=model,
-    tools=[get_company_stock_info, get_date, retrieve_documents],
+    model=model ,
+    tools=[get_company_stock_info, get_date, retrieve_documents, company_metrics],
     system_prompt="""You are a financial assistant.
 
     Use tools whenever they are needed to obtain accurate information.
