@@ -304,7 +304,7 @@ retriever = db.as_retriever(
 
 #response format for agent
 @dataclass
-class ResponseFormat:
+class ResponseFormat(BaseModel):
     summary: str
-    data: dict
-    metadata: dict
+    data: dict = Field(default_factory=dict)
+    metadata: dict = Field(default_factory=dict)

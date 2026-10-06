@@ -3,6 +3,15 @@ from langchain.messages import AIMessage
 from langchain_ollama import ChatOllama
 from langgraph.checkpoint.memory import InMemorySaver
 from agent_setup import ResponseFormat, get_company_stock_info, get_date, retrieve_documents
+from dotenv import load_dotenv
+from langchain_openai import ChatOpenAI
+import os
+
+load_dotenv()
+api_key = os.getenv("OPENAI_API_KEY")
+
+if not api_key:
+    raise RuntimeError("OPENAI_API_KEY is not set") 
 
 #Model, it is a local model
 model = ChatOllama(
@@ -10,6 +19,9 @@ model = ChatOllama(
     model="qwen3",
     temperature=0.1
 )
+
+#frontier model test
+llm = ChatOpenAI(model="gpt-6-astra")
 
 #allow to save chat history
 checkpointer = InMemorySaver()
@@ -24,7 +36,7 @@ config = {
 
 #agent 
 agent = create_agent(
-    model=model,
+    model=llm,
     tools=[get_company_stock_info, get_date, retrieve_documents],
     system_prompt="""You are a financial assistant.
 
