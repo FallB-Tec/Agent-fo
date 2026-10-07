@@ -25,13 +25,33 @@ Metric = Literal[
 
 #Tools
 #1.Simple tool to get the current time
-@tool("get_date",description="Get the current date in the format YYYY-MM-DD and the day of the week",return_direct=False)
+@tool("get_date", description="""
+    Get the current date and day of the week.
+
+    MUST use this tool whenever the user asks about a relative date,
+    including:
+    - today
+    - yesterday
+    - tomorrow
+    - last week
+    - next week
+    - last month
+    - next month
+    - one week ago
+    - one month ago
+    - two weeks ago
+    - any other date relative to the current date
+
+    After receiving the current date, perform the required date arithmetic
+    yourself to determine the requested date.
+    """,return_direct=False)
 def get_date() -> str:
     return datetime.now().strftime("%Y-%m-%d %A")
 
 #2.Tool to retrieve relevant financial documents from the vectorstore
 @tool("retrieve_documents",description=
-    "Retrieve relevant information from the company's financial filings "
+"""
+Retrieve relevant information from the company's financial filings "
     "stored in the vector database. Use this tool when answering questions "
     "about information contained in 10-K filings, including business "
     "operations, financial performance, revenue, expenses, risks, assets, "
@@ -43,7 +63,9 @@ def get_date() -> str:
     "current or historical stock prices, trading volume, or stock-price "
     "calculations. For those requests, use the appropriate stock-data or "
     "metrics tool. Base document-related answers only on information "
-    "supported by the retrieved documents.",return_direct=False)
+    "supported by the retrieved documents."
+"""
+,return_direct=False)
 def retrieve_documents(query: str) -> list:
     relevant_docs = retriever.invoke(query)
     
@@ -58,7 +80,7 @@ def retrieve_documents(query: str) -> list:
 
 #3.Tool to get stock information 
 @tool(
-    "get_company_stock_info",
+    "get_company_raw_stock_info",
     description=(
         """ Retrieve RAW historical stock market data (OHLCV) for a company.
 
@@ -68,6 +90,10 @@ def retrieve_documents(query: str) -> list:
     - daily open/high/low/close/volume
     - a list or table of trading data over a period
 
+    For financial filings, do not assume a filing is unavailable because it
+    seems too recent. If the question concerns a specific filing, use
+    retrieve_documents to check the database.
+    
     DO NOT use this tool when the user asks for a calculated metric.
 
     For calculated metrics such as:
@@ -89,7 +115,7 @@ def retrieve_documents(query: str) -> list:
     ),
     return_direct=False,
 )
-def get_company_stock_info(
+def get_company_raw_stock_info(
     ticker: str,
     start_date: str,
     end_date: str
@@ -108,7 +134,7 @@ def get_company_stock_info(
         }
         
 #tool to calculate metrics for stock data
-@tool("company_metrics", description=(
+@tool("company_financial_metrics", description=(
         """Calculate a stock metric over an inclusive date range.
 
     MUST use this tool for:
@@ -131,7 +157,7 @@ def get_company_stock_info(
     All calculations are performed deterministically from historical
     market data, not by the language model.."""
     ))
-def company_metrics(
+def company_financial_metrics(
     ticker: str,
     start_date: Date,
     end_date: Date,
@@ -325,7 +351,7 @@ retriever = db.as_retriever(
 
 #response format for agent
 @dataclass
-class ResponseFormat:
+class ResponseFormat(BaseModel):
     summary: str
     data: dict 
     metadata: dict 

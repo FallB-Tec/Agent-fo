@@ -1,13 +1,16 @@
+from pickle import GET
+
 from langchain.agents import create_agent
 from langchain.messages import AIMessage
 from langchain_ollama import ChatOllama
 from langgraph.checkpoint.memory import InMemorySaver
-from agent_setup import ResponseFormat, company_metrics, get_company_stock_info, get_date, retrieve_documents
+from agent_setup import ResponseFormat, company_financial_metrics, get_date, retrieve_documents,get_company_raw_stock_info
+
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 import os
 
-#Model, it is a local model 5b params q4
+#Model, it is a local model 14b params q4
 model = ChatOllama(
      base_url="http://localhost:11434",
     model="qwen3:14b",
@@ -27,10 +30,20 @@ config = {
 #agent 
 agent = create_agent(
     model=model ,
-    tools=[get_company_stock_info, get_date, retrieve_documents, company_metrics],
+    tools=[get_company_raw_stock_info, get_date, retrieve_documents, company_financial_metrics],
     system_prompt="""You are a financial assistant.
 
     Use tools whenever they are needed to obtain accurate information.
+    
+    Before answering questions involving dates or time-sensitive information,
+    always call get_date firstto obtain the current date.
+
+    Do not rely on your internal knowledge of the current date or year.
+    The date returned by get_date is authoritative.
+
+    For financial filings, do not assume a filing is unavailable because it
+    seems too recent. If the question concerns a specific filing, use
+    retrieve_documents to check the database.
 
     When answering a user's question:
     - Answer only what the user asked for.
@@ -41,7 +54,7 @@ agent = create_agent(
     - Do not perform financial calculations yourself when a tool can perform them.
     - Clearly distinguish between stock Open, High, Low, and Close prices.
 
-    When using company_metrics:
+    When using company_financial_metrics:
     - Select only the metric necessary to answer the user's question.
     - Do not request or calculate additional metrics unless the user asks for them.
     - Use the exact metric that matches the user's request.

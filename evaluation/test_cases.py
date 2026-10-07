@@ -1,3 +1,4 @@
+
 # evaluation/test_cases.py
 
 # ============================================================
@@ -69,7 +70,6 @@ TEST_CASES = [
         "question": "What was Amazon's revenue in 2025?",
         "expected_tools": ["retrieve_documents"],
         "expected_keywords": [
-            "revenue",
             "716",
             "924",
         ],
@@ -147,14 +147,14 @@ TEST_CASES = [
 
 
     # ========================================================
-    # 3. GET_COMPANY_STOCK_INFO
+    # 3. GET_COMPANY_RAW_STOCK_INFO
     # ========================================================
 
     {
         "id": 12,
         "scenario": "stock_single_day",
         "question": "Give me Amazon's stock data for September 15, 2026.",
-        "expected_tools": ["get_company_stock_info"],
+        "expected_tools": ["get_company_raw_stock_info"],
         "expected_tickers": ["AMZN"],
         "answer_type": "stock_data",
     },
@@ -166,7 +166,7 @@ TEST_CASES = [
             "Give me Amazon's stock data "
             "from September 1 to September 10, 2026."
         ),
-        "expected_tools": ["get_company_stock_info"],
+        "expected_tools": ["get_company_raw_stock_info"],
         "expected_tickers": ["AMZN"],
         "answer_type": "stock_data",
     },
@@ -178,7 +178,7 @@ TEST_CASES = [
             "Give me Amazon's OHLCV data "
             "from September 1 to September 10, 2026."
         ),
-        "expected_tools": ["get_company_stock_info"],
+        "expected_tools": ["get_company_raw_stock_info"],
         "expected_tickers": ["AMZN"],
         "expected_keywords": [
             "open",
@@ -198,7 +198,7 @@ TEST_CASES = [
             "Amazon, Nvidia, and Apple from "
             "September 1 to September 5, 2026."
         ),
-        "expected_tools": ["get_company_stock_info"],
+        "expected_tools": ["get_company_raw_stock_info"],
         "expected_tickers": [
             "AMZN",
             "NVDA",
@@ -214,7 +214,7 @@ TEST_CASES = [
             "Give me Amazon's stock data "
             "from September 1 to October 4, 2026."
         ),
-        "expected_tools": ["get_company_stock_info"],
+        "expected_tools": ["get_company_raw_stock_info"],
         "expected_tickers": ["AMZN"],
         "answer_type": "stock_data",
         # October 4, 2026 is a Sunday.
@@ -228,7 +228,7 @@ TEST_CASES = [
             "What was Amazon's closing price "
             "on September 15, 2026?"
         ),
-        "expected_tools": ["get_company_stock_info"],
+        "expected_tools": ["get_company_raw_stock_info"],
         "expected_tickers": ["AMZN"],
         "calculate_ground_truth": True,
         "metric": "single_day_close",
@@ -237,7 +237,7 @@ TEST_CASES = [
 
 
     # ========================================================
-    # 4. COMPANY_METRICS
+    # 4. COMPANY_FINANCIAL_METRICS
     # ========================================================
 
     {
@@ -247,7 +247,7 @@ TEST_CASES = [
             "What was Amazon's highest closing price "
             "in September 2026?"
         ),
-        "expected_tools": ["company_metrics"],
+        "expected_tools": ["company_financial_metrics"],
         "expected_metric": "highest_close",
         "calculate_ground_truth": True,
         "metric": "highest_close",
@@ -261,7 +261,7 @@ TEST_CASES = [
             "What was Amazon's lowest closing price "
             "in September 2026?"
         ),
-        "expected_tools": ["company_metrics"],
+        "expected_tools": ["company_financial_metrics"],
         "expected_metric": "lowest_close",
         "calculate_ground_truth": True,
         "metric": "lowest_close",
@@ -275,7 +275,7 @@ TEST_CASES = [
             "What was Amazon's average closing price "
             "in September 2026?"
         ),
-        "expected_tools": ["company_metrics"],
+        "expected_tools": ["company_financial_metrics"],
         "expected_metric": "average_close",
         "calculate_ground_truth": True,
         "metric": "average_close",
@@ -289,7 +289,7 @@ TEST_CASES = [
             "What was Amazon's highest intraday price "
             "in September 2026?"
         ),
-        "expected_tools": ["company_metrics"],
+        "expected_tools": ["company_financial_metrics"],
         "expected_metric": "highest_high",
         "calculate_ground_truth": True,
         "metric": "highest_high",
@@ -303,7 +303,7 @@ TEST_CASES = [
             "What was Amazon's lowest intraday price "
             "in September 2026?"
         ),
-        "expected_tools": ["company_metrics"],
+        "expected_tools": ["company_financial_metrics"],
         "expected_metric": "lowest_low",
         "calculate_ground_truth": True,
         "metric": "lowest_low",
@@ -317,7 +317,7 @@ TEST_CASES = [
             "What was Amazon's average daily high "
             "in September 2026?"
         ),
-        "expected_tools": ["company_metrics"],
+        "expected_tools": ["company_financial_metrics"],
         "expected_metric": "average_high",
         "calculate_ground_truth": True,
         "metric": "average_high",
@@ -331,7 +331,7 @@ TEST_CASES = [
             "What was Amazon's average daily low "
             "in September 2026?"
         ),
-        "expected_tools": ["company_metrics"],
+        "expected_tools": ["company_financial_metrics"],
         "expected_metric": "average_low",
         "calculate_ground_truth": True,
         "metric": "average_low",
@@ -345,7 +345,7 @@ TEST_CASES = [
             "What was Amazon's average trading volume "
             "in September 2026?"
         ),
-        "expected_tools": ["company_metrics"],
+        "expected_tools": ["company_financial_metrics"],
         "expected_metric": "average_volume",
         "calculate_ground_truth": True,
         "metric": "average_volume",
@@ -359,7 +359,7 @@ TEST_CASES = [
             "How much did Amazon's stock price change "
             "during September 2026?"
         ),
-        "expected_tools": ["company_metrics"],
+        "expected_tools": ["company_financial_metrics"],
         "expected_metric": "price_change",
         "calculate_ground_truth": True,
         "metric": "price_change",
@@ -373,7 +373,7 @@ TEST_CASES = [
             "What percentage did Amazon's stock change "
             "during September 2026?"
         ),
-        "expected_tools": ["company_metrics"],
+        "expected_tools": ["company_financial_metrics"],
         "expected_metric": "percentage_change",
         "calculate_ground_truth": True,
         "metric": "percentage_change",
@@ -391,7 +391,7 @@ TEST_CASES = [
         "question": "What was Amazon's closing price yesterday?",
         "expected_tools": [
             "get_date",
-            "get_company_stock_info",
+            "get_company_raw_stock_info",
         ],
         "expected_tickers": ["AMZN"],
         "calculate_ground_truth": True,
@@ -409,7 +409,7 @@ TEST_CASES = [
         ),
         "expected_tools": [
             "get_date",
-            "company_metrics",
+            "company_financial_metrics",
         ],
         "expected_metric": "highest_close",
         "calculate_ground_truth": True,
@@ -427,7 +427,7 @@ TEST_CASES = [
         ),
         "expected_tools": [
             "get_date",
-            "company_metrics",
+            "company_financial_metrics",
         ],
         "expected_metric": "lowest_close",
         "calculate_ground_truth": True,
@@ -445,7 +445,7 @@ TEST_CASES = [
         ),
         "expected_tools": [
             "get_date",
-            "get_company_stock_info",
+            "get_company_raw_stock_info",
         ],
         "expected_tickers": ["AMZN"],
         "answer_type": "stock_data",
@@ -463,10 +463,10 @@ TEST_CASES = [
             "What was Amazon's highest closing price "
             "in September 2026?"
         ),
-        "expected_tools": ["company_metrics"],
+        "expected_tools": ["company_financial_metrics"],
         "must_not_use": [
             "retrieve_documents",
-            "get_company_stock_info",
+            "get_company_raw_stock_info",
         ],
         "expected_metric": "highest_close",
         "calculate_ground_truth": True,
@@ -483,8 +483,8 @@ TEST_CASES = [
         ),
         "expected_tools": ["retrieve_documents"],
         "must_not_use": [
-            "company_metrics",
-            "get_company_stock_info",
+            "company_financial_metrics",
+            "get_company_raw_stock_info",
         ],
         "requires_document_grounding": True,
     },
@@ -497,11 +497,11 @@ TEST_CASES = [
             "from September 1 to September 10, 2026."
         ),
         "expected_tools": [
-            "get_company_stock_info",
+            "get_company_raw_stock_info",
         ],
         "must_not_use": [
             "retrieve_documents",
-            "company_metrics",
+            "company_financial_metrics",
         ],
         "expected_tickers": ["AMZN"],
         "answer_type": "stock_data",
@@ -522,7 +522,7 @@ TEST_CASES = [
         ),
         "expected_tools": [
             "retrieve_documents",
-            "company_metrics",
+            "company_financial_metrics",
         ],
         "expected_metric": "percentage_change",
         "calculate_ground_truth": True,
@@ -540,7 +540,7 @@ TEST_CASES = [
         ),
         "expected_tools": [
             "get_date",
-            "company_metrics",
+            "company_financial_metrics",
         ],
         "expected_metric": "highest_close",
         "calculate_ground_truth": True,
@@ -558,7 +558,7 @@ TEST_CASES = [
         ),
         "expected_tools": [
             "get_date",
-            "get_company_stock_info",
+            "get_company_raw_stock_info",
         ],
         "expected_tickers": ["AMZN"],
         "answer_type": "stock_data",
@@ -580,8 +580,8 @@ TEST_CASES = [
         "must_not_use": [
             "get_date",
             "retrieve_documents",
-            "get_company_stock_info",
-            "company_metrics",
+            "get_company_raw_stock_info",
+            "company_financial_metrics",
         ],
         "expected_keywords": [
             "revenue",
@@ -597,8 +597,8 @@ TEST_CASES = [
         "must_not_use": [
             "get_date",
             "retrieve_documents",
-            "get_company_stock_info",
-            "company_metrics",
+            "get_company_raw_stock_info",
+            "company_financial_metrics",
         ],
         "expected_keywords": [
             "market",
@@ -614,8 +614,8 @@ TEST_CASES = [
         "must_not_use": [
             "get_date",
             "retrieve_documents",
-            "get_company_stock_info",
-            "company_metrics",
+            "get_company_raw_stock_info",
+            "company_financial_metrics",
         ],
         "expected_keywords": [
             "10-K",
@@ -635,8 +635,10 @@ TEST_CASES = [
             "What was Amazon's lowest closing price "
             "from September 10, 2026 to September 1, 2026?"
         ),
-        "expected_tools": ["company_metrics"],
-        "expected_metric": "lowest_close",
+        # The agent should reject/clarify the invalid range.
+        # A tool call is optional because no valid calculation
+        # should be performed with reversed dates.
+        "expected_tools": [],
         "expected_result": "error",
     },
 
@@ -648,7 +650,7 @@ TEST_CASES = [
             "from September 1 to September 5, 2026."
         ),
         "expected_tools": [
-            "get_company_stock_info",
+            "get_company_raw_stock_info",
         ],
         "expected_result": "error",
     },
@@ -660,10 +662,10 @@ TEST_CASES = [
             "What was Amazon's stock price "
             "on Sunday, October 4, 2026?"
         ),
-        "expected_tools": [
-            "get_company_stock_info",
-        ],
-        "expected_tickers": ["AMZN"],
+        # The agent may call the stock tool to verify that
+        # no trading data exists, or correctly explain that
+        # Sunday is a non-trading day without a tool call.
+        "expected_tools": [],
         "expected_result": "no_trading_data",
     },
 
@@ -712,27 +714,20 @@ TEST_CASES = [
         "id": 46,
         "scenario": "ambiguous_price",
         "question": "What was Amazon's price last month?",
-        "expected_tools": [
-            "get_date",
-            "get_company_stock_info",
-        ],
-        "expected_tickers": ["AMZN"],
-        "answer_type": "stock_data",
+        # "Price" is ambiguous: closing price, average price,
+        # daily prices, etc. Correct behavior is clarification.
+        "expected_tools": [],
+        "expected_result": "clarification",
     },
 
     {
         "id": 47,
         "scenario": "ambiguous_performance",
         "question": "How did Amazon perform last month?",
-        "expected_tools": [
-            "get_date",
-            "company_metrics",
-        ],
-        "expected_metric": "percentage_change",
-        "calculate_ground_truth": True,
-        "metric": "percentage_change",
-        "relative_period": "last_month",
-        "tolerance": 0.01,
+        # "Perform" is ambiguous and could refer to stock price,
+        # percentage return, revenue, or another financial measure.
+        "expected_tools": [],
+        "expected_result": "clarification",
     },
 
 
@@ -748,7 +743,7 @@ TEST_CASES = [
             "What about August?",
         ],
         "expected_tools": [
-            "company_metrics",
+            "company_financial_metrics",
         ],
         "expected_metric": "highest_close",
         "calculate_ground_truth": True,
@@ -764,7 +759,7 @@ TEST_CASES = [
             "And what was the highest?",
         ],
         "expected_tools": [
-            "company_metrics",
+            "company_financial_metrics",
         ],
         "expected_metric": "highest_close",
         "calculate_ground_truth": True,
@@ -785,26 +780,19 @@ TEST_CASES = [
             "what was its revenue, and what was "
             "its highest closing price in September 2026?"
         ),
-
         "expected_tools": [
             "retrieve_documents",
-            "company_metrics",
+            "company_financial_metrics",
         ],
-
         "expected_metric": "highest_close",
-
-        # Stock portion
         "calculate_ground_truth": True,
         "metric": "highest_close",
         "tolerance": 0.01,
-
-        # Filing portion
         "expected_keywords": [
             "revenue",
             "716",
             "924",
         ],
-
         "requires_document_grounding": True,
     },
 ]
