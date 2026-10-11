@@ -36,7 +36,7 @@ def load_document(docs_path ="./Companies_10k_filing"):
     return documents
     
 #Making chunks
-def split_documents(documents,chunk_size=800,chunk_overlap=0):
+def split_documents(documents,chunk_size=1000,chunk_overlap=150):
     print(f"Splitting documents into chunks documents:{documents}")
     
     #Split the document

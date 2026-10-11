@@ -89,7 +89,7 @@ def retrieve_documents(query: str) -> list:
     ),
     return_direct=False,
 )
-def get_company_stock_info(
+def get_company_raw_stock_info(
     ticker: str,
     start_date: str,
     end_date: str
@@ -108,7 +108,7 @@ def get_company_stock_info(
         }
         
 #tool to calculate metrics for stock data
-@tool("company_metrics", description=(
+@tool("company_financial_metrics", description=(
         """Calculate a stock metric over an inclusive date range.
 
     MUST use this tool for:
@@ -131,7 +131,7 @@ def get_company_stock_info(
     All calculations are performed deterministically from historical
     market data, not by the language model.."""
     ))
-def company_metrics(
+def company_financial_metrics(
     ticker: str,
     start_date: Date,
     end_date: Date,
